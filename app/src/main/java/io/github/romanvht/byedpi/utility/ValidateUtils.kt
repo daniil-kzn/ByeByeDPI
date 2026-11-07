@@ -1,37 +1,29 @@
 package io.github.romanvht.byedpi.utility
 
-import android.net.InetAddresses
-import android.os.Build
+import android.system.Os
+import android.system.OsConstants
 import android.util.Log
 import android.widget.Toast
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
+import java.net.InetAddress
 
 private const val TAG = "ValidateUtils"
 
-fun checkIp(ip: String): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        InetAddresses.isNumericAddress(ip)
-    } else {
-        // This pattern doesn't not support IPv6
-        // @Suppress("DEPRECATION")
-        // Patterns.IP_ADDRESS.matcher(ip).matches()
-        true
-    }
+/**
+ * Parses a numeric IPv4 or IPv6 address without DNS. `Os.inet_pton` exists since
+ * API 21, so validation works on every supported version, not only on API 29+.
+ */
+private fun parseNumericAddress(ip: String): InetAddress? = try {
+    Os.inet_pton(OsConstants.AF_INET, ip) ?: Os.inet_pton(OsConstants.AF_INET6, ip)
+} catch (_: Exception) {
+    null
 }
 
-fun checkNotLocalIp(ip: String): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        InetAddresses.isNumericAddress(ip) && InetAddresses.parseNumericAddress(ip).let {
-            !it.isAnyLocalAddress && !it.isLoopbackAddress
-        }
-    } else {
-        // This pattern doesn't not support IPv6
-        // @Suppress("DEPRECATION")
-        // Patterns.IP_ADDRESS.matcher(ip).matches()
-        true
-    }
-}
+fun checkIp(ip: String): Boolean = parseNumericAddress(ip) != null
+
+fun checkNotLocalIp(ip: String): Boolean =
+    parseNumericAddress(ip)?.let { !it.isAnyLocalAddress && !it.isLoopbackAddress } ?: false
 
 fun checkDomain(domain: String): Boolean {
     if (domain.isEmpty()) return false
