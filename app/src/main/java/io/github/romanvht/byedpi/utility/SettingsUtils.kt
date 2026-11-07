@@ -175,6 +175,10 @@ object SettingsUtils {
             val prefs = context.getPreferences()
 
             if (Section.SETTINGS in sections && import.settings != null) {
+                // JSON keeps no number types: Gson reads every number as Double. The
+                // types stored on this device are captured first, before the keys are
+                // removed, so an imported value keeps the type the app reads it with.
+                val currentTypes = prefs.all.mapValues { (_, value) -> value?.javaClass }
                 prefs.edit(commit = true) {
                     prefs.all.keys
                         .filter { it !in separatePreferenceKeys }
@@ -189,8 +193,11 @@ object SettingsUtils {
                                 is String -> putString(key, value)
                                 is Float -> putFloat(key, value)
                                 is Long -> putLong(key, value)
-                                is Double -> {
-                                    when (value) {
+                                is Double -> when (currentTypes[key]) {
+                                    Float::class.javaObjectType -> putFloat(key, value.toFloat())
+                                    Long::class.javaObjectType -> putLong(key, value.toLong())
+                                    Int::class.javaObjectType -> putInt(key, value.toInt())
+                                    else -> when (value) {
                                         value.toInt().toDouble() -> {
                                             putInt(key, value.toInt())
                                         }
