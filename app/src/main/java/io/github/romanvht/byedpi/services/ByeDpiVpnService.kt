@@ -108,6 +108,7 @@ class ByeDpiVpnService : VpnService() {
             )
         )
 
+        builder.setMtu(EngineProtocol.TUN_MTU)
         builder.addAddress("10.10.10.10", 32)
             .addRoute("0.0.0.0", 0)
 
@@ -130,7 +131,7 @@ class ByeDpiVpnService : VpnService() {
                     try {
                         builder.addDisallowedApplication(packageName)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Не удалось добавить приложение $packageName в черный список", e)
+                        Log.e(TAG, "Could not exclude $packageName from the VPN", e)
                     }
                 }
 
@@ -142,7 +143,7 @@ class ByeDpiVpnService : VpnService() {
                     try {
                         builder.addAllowedApplication(packageName)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Не удалось добавить приложение $packageName в белый список", e)
+                        Log.e(TAG, "Could not route $packageName through the VPN", e)
                     }
                 }
             }

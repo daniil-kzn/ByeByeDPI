@@ -35,7 +35,8 @@ internal class NativeSession(
 ) {
     companion object {
         private const val TAG = "NativeSession"
-        private const val START_TIMEOUT = 10_000L
+        private const val START_TIMEOUT = EngineProtocol.NATIVE_START_TIMEOUT
+        private const val TUNNEL_SETTLE_MS = 200L
         private const val STOP_TIMEOUT = 2_000L
         private const val PROBE_TIMEOUT = 250
         private val processStarted = AtomicBoolean()
@@ -210,7 +211,7 @@ internal class NativeSession(
                     tunFd = fd
                     val tunnelConfig = buildString {
                         appendLine("tunnel:")
-                        appendLine("  mtu: 8500")
+                        appendLine("  mtu: ${EngineProtocol.TUN_MTU}")
                         appendLine("misc:")
                         appendLine("  task-stack-size: 81920")
                         appendLine("socks5:")
@@ -218,8 +219,13 @@ internal class NativeSession(
                         appendLine("  port: ${config.port}")
                         appendLine("  udp: udp")
                     }
-                    tunnelThread = runNative("HEV") { TProxyService.startTunnel(tunnelConfig, fd.fd) }
-                    delay(100)
+                    val tunnel = runNative("HEV") { TProxyService.startTunnel(tunnelConfig, fd.fd) }
+                    tunnelThread = tunnel
+                    // hev has no readiness callback: a bad config or fd makes it return
+                    // at once. Give it a moment and report STARTED only if it still runs;
+                    // otherwise runNative has already queued the failure.
+                    delay(TUNNEL_SETTLE_MS)
+                    if (!tunnel.isAlive) return@launch
                 }
                 if (state != EngineProtocol.STATE_STOPPING) {
                     state = EngineProtocol.STATE_RUNNING

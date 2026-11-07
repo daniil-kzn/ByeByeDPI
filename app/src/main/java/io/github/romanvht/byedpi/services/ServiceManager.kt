@@ -109,7 +109,7 @@ object ServiceManager {
                                 configured.complete(false)
                             }
                         }
-                        if (withTimeoutOrNull(8_000) { configured.await() } != true) {
+                        if (withTimeoutOrNull(EngineProtocol.CONFIGURE_TIMEOUT) { configured.await() } != true) {
                             startup.cancel()
                             if (commands.get() == command) {
                                 session?.let {

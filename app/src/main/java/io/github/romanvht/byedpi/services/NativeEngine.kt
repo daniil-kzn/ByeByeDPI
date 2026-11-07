@@ -200,7 +200,7 @@ internal class NativeEngine(
             if (!foreground) serviceStarted = bound
             check(bound) { "Could not bind native engine" }
         }
-        withTimeout(10_000) { hello.await() }
+        withTimeout(EngineProtocol.CONNECT_TIMEOUT) { hello.await() }
         check(!closing && !exited.isCompleted) { "Native engine stopped during startup" }
     }
 
@@ -228,7 +228,7 @@ internal class NativeEngine(
     }
 
     suspend fun awaitStarted() {
-        withTimeout(15_000) { started.await() }
+        withTimeout(EngineProtocol.START_TIMEOUT) { started.await() }
         check(!closing && !exited.isCompleted) { failure ?: "Native engine stopped during startup" }
     }
 

@@ -19,6 +19,20 @@ internal object EngineProtocol {
     const val STATE_RUNNING = 2
     const val STATE_STOPPING = 3
 
+    /** MTU of the TUN interface; hev-socks5-tunnel must use the same value. */
+    const val TUN_MTU = 8500
+
+    // Timeouts nest from the inside out, so the innermost failure, which carries
+    // the real reason, always fires before an outer one cancels the whole start.
+    /** Native process: SOCKS proxy must answer within this time. */
+    const val NATIVE_START_TIMEOUT = 10_000L
+    /** Client: the native process must answer HELLO within this time. */
+    const val CONNECT_TIMEOUT = 10_000L
+    /** Client: the engine must report STARTED within this time. */
+    const val START_TIMEOUT = NATIVE_START_TIMEOUT + 5_000L
+    /** Service action: the engine must accept the configuration within this time. */
+    const val CONFIGURE_TIMEOUT = CONNECT_TIMEOUT + 2_000L
+
     const val ARGS = "args"
     const val HOST = "host"
     const val PORT = "port"
