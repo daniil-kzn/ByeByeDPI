@@ -248,4 +248,6 @@
     <string name="external_strategy_settings">Đổi chiến lược từ ứng dụng khác</string>
     <string name="external_strategy_summary">Cho phép ứng dụng khác thay dòng lệnh. Proxy chỉ lắng nghe trên địa chỉ cục bộ</string>
     <string name="external_strategy_rejected">Một ứng dụng khác đã cố đổi chiến lược. Yêu cầu bị từ chối, xem cài đặt tự động hóa</string>
+    <string name="test_parallel_strategies">Số chiến lược cùng lúc</string>
+    <string name="proxytest_parallel_desc">Mỗi chiến lược chạy trong một tiến trình riêng, tải mạng tăng tương ứng. Chiến lược có cổng riêng (-p) được kiểm tra lần lượt</string>
 </resources>

@@ -30,6 +30,9 @@ import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 
 class TestService : Service() {
 
@@ -104,8 +107,9 @@ class TestService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val gson = Gson()
-    private val engineMutex = Mutex()
-    private var engine: NativeEngine? = null
+    private val engineMutexes = List(TestSlots.COUNT) { Mutex() }
+    private val engines = arrayOfNulls<NativeEngine>(TestSlots.COUNT)
+    private val saveMutex = Mutex()
     private var testJob: Job? = null
     private var lastStartId = 0
     private var destroyed = false
@@ -163,7 +167,7 @@ class TestService : Service() {
         testJob = scope.launch(start = CoroutineStart.LAZY) {
             val testingJob = coroutineContext.job
             var settings: TestSettings? = null
-            var currentStrategy: StrategyResult? = null
+            val running = mutableSetOf<StrategyResult>()
             var prepared = false
             var failed = false
             val strategies = mutableListOf<StrategyResult>()
@@ -172,7 +176,7 @@ class TestService : Service() {
                     state.first { it.isStopping }
                     testingJob.cancel()
                 } finally {
-                    stopEngine()
+                    stopAllEngines()
                 }
             }
 
@@ -191,27 +195,41 @@ class TestService : Service() {
                 getPreferences().edit(commit = true) { putBoolean("is_test_running", true) }
                 publish(strategies, 0)
                 ServiceManager.waitStop()
-                val configurations = withContext(Dispatchers.IO) {
-                    options.commands.map { command ->
-                        runCatching { testConfiguration(this@TestService, command, options.host, options.port) }
-                    }
-                }
 
-                for ((index, strategy) in strategies.withIndex()) {
-                    ensureActive()
-                    currentStrategy = strategy
-                    strategy.totalRequests = options.sites.size * options.requestsCount
-                    publish(strategies, index + 1)
-                    val configuration = configurations[index].getOrNull()
-                    if (configuration == null || !checkStrategy(strategy, strategies, configuration, options)) {
-                        resetStrategyResult(strategy, options)
+                val slots = withContext(Dispatchers.IO) { slotPorts(options) }
+                Log.i(TAG, "Testing ${strategies.size} strategies in ${slots.size} slot(s), ports $slots")
+                var nextIndex = 0
+                var startedCount = 0
+
+                // Workers run on the main dispatcher, so the shared counters and the
+                // strategy results are only touched from one thread.
+                coroutineScope {
+                    for ((slot, port) in slots.withIndex()) {
+                        launch {
+                            while (true) {
+                                ensureActive()
+                                val index = nextIndex++
+                                if (index >= strategies.size) break
+                                val strategy = strategies[index]
+                                running.add(strategy)
+                                strategy.totalRequests = options.sites.size * options.requestsCount
+                                startedCount = maxOf(startedCount, index + 1)
+                                publish(strategies, startedCount)
+                                val configuration = withContext(Dispatchers.IO) {
+                                    runCatching { testConfiguration(this@TestService, strategy.command, options.host, port) }
+                                }.getOrNull()
+                                if (configuration == null || !checkStrategy(strategy, strategies, configuration, options, slot)) {
+                                    resetStrategyResult(strategy, options)
+                                }
+                                strategy.isCompleted = true
+                                running.remove(strategy)
+                                publish(strategies)
+                                saveResults(strategies)
+                                stopEngine(slot)
+                                delay(options.delaySec * 500L)
+                            }
+                        }
                     }
-                    strategy.isCompleted = true
-                    publish(strategies)
-                    saveResults(strategies)
-                    stopEngine()
-                    currentStrategy = null
-                    delay(options.delaySec * 500L)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -223,12 +241,12 @@ class TestService : Service() {
                 withContext(NonCancellable) {
                     mutableState.value = state.value.copy(isStopping = true)
                     settings?.let { options ->
-                        currentStrategy?.takeIf { !it.isCompleted }?.let {
+                        running.filter { !it.isCompleted }.forEach {
                             resetStrategyResult(it, options)
                             it.isCompleted = true
                         }
                     }
-                    stopEngine()
+                    stopAllEngines()
                     if (prepared) {
                         try {
                             saveResults(strategies)
@@ -259,9 +277,10 @@ class TestService : Service() {
         strategies: List<StrategyResult>,
         configuration: Configuration,
         settings: TestSettings,
+        slot: Int,
     ): Boolean {
         return try {
-            val current = startEngine(configuration)
+            val current = startEngine(configuration, slot)
             supervisorScope {
                 val engineExit = async { current.awaitExit() }
                 val check = async {
@@ -307,28 +326,62 @@ class TestService : Service() {
         }
     }
 
-    private suspend fun startEngine(configuration: Configuration): NativeEngine {
+    private suspend fun startEngine(configuration: Configuration, slot: Int): NativeEngine {
         if (state.value.isStopping) throw CancellationException("Proxy test stopped")
-        val current = NativeEngine(applicationContext, Mode.Proxy, foreground = false)
-        engine = current
+        val current = NativeEngine(applicationContext, Mode.Proxy, foreground = false, testSlot = slot)
+        engines[slot] = current
         current.start(configuration)
         return current
     }
 
-    private suspend fun stopEngine() = withContext(NonCancellable) {
-        engineMutex.withLock {
-            val current = engine ?: return@withLock
+    private suspend fun stopEngine(slot: Int) = withContext(NonCancellable) {
+        engineMutexes[slot].withLock {
+            val current = engines[slot] ?: return@withLock
             var stopFailed = false
             while (true) {
                 try {
                     current.stop()
-                    engine = null
+                    engines[slot] = null
                     break
                 } catch (e: Exception) {
-                    if (!stopFailed) Log.e(TAG, "Failed to stop proxy test engine", e)
+                    if (!stopFailed) Log.e(TAG, "Failed to stop proxy test engine in slot $slot", e)
                     stopFailed = true
                     delay(500)
                 }
+            }
+        }
+    }
+
+    private suspend fun stopAllEngines() = withContext(NonCancellable) {
+        coroutineScope {
+            for (slot in 0 until TestSlots.COUNT) launch { stopEngine(slot) }
+        }
+    }
+
+    /**
+     * Listen ports for the engine slots. A single slot keeps the configured proxy port,
+     * as before. Parallel slots get free ports from the OS, so they cannot clash with
+     * each other or with the user's own proxy port. A strategy that sets its own port
+     * would bind the same port in every slot, so such a list runs in one slot.
+     */
+    private fun slotPorts(options: TestSettings): List<Int> {
+        val fixedPort = options.commands.any { shellSplit(it).checkIpAndPortInArgs().second != null }
+        val count = if (fixedPort) 1 else options.parallelism.coerceIn(1, TestSlots.COUNT)
+        if (count == 1) return listOf(options.port)
+        val bindAddress = try {
+            InetAddress.getByName(options.host.removeSurrounding("[", "]"))
+        } catch (_: Exception) {
+            null
+        }
+        return List(count) { slot ->
+            try {
+                ServerSocket().use { socket ->
+                    socket.bind(InetSocketAddress(bindAddress, 0))
+                    socket.localPort
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not reserve a port for slot $slot", e)
+                options.port + slot
             }
         }
     }
@@ -346,9 +399,10 @@ class TestService : Service() {
         val requestsCount = prefs.getIntStringNotNull("byedpi_proxytest_requests", 1).coerceAtLeast(1)
         val requestTimeout = prefs.getLongStringNotNull("byedpi_proxytest_timeout", 5).coerceAtLeast(1)
         val requestLimit = prefs.getIntStringNotNull("byedpi_proxytest_limit", 20).coerceAtLeast(1)
+        val parallelism = prefs.getIntStringNotNull("byedpi_proxytest_parallel", 3).coerceIn(1, TestSlots.COUNT)
         DomainListUtils.syncLists(this)
         return TestSettings(DomainListUtils.getActiveDomains(this).toList(), commands, host, port,
-            delaySec, requestsCount, requestTimeout, requestLimit)
+            delaySec, requestsCount, requestTimeout, requestLimit, parallelism)
     }
 
     private fun resetStrategyResult(strategy: StrategyResult, settings: TestSettings) {
@@ -361,7 +415,9 @@ class TestService : Service() {
     private fun snapshot(strategies: List<StrategyResult>): List<StrategyResult> =
         strategies.map { it.copy(siteResults = it.siteResults.toMutableList()) }
 
-    private suspend fun saveResults(strategies: List<StrategyResult>) {
+    // Parallel slots finish in any order: the snapshot is taken under the lock so an
+    // older snapshot never overwrites a newer one on disk.
+    private suspend fun saveResults(strategies: List<StrategyResult>) = saveMutex.withLock {
         val results = snapshot(strategies)
         withContext(Dispatchers.IO) {
             synchronized(resultsLock) {

@@ -13,7 +13,7 @@ import io.github.romanvht.byedpi.data.*
 import io.github.romanvht.byedpi.receiver.ServiceActionReceiver
 import io.github.romanvht.byedpi.utility.*
 
-class ByeDpiProxyService : Service() {
+open class ByeDpiProxyService : Service() {
     companion object {
         internal const val FOREGROUND_SERVICE_ID = 2
         private const val PAUSE_NOTIFICATION_ID = 3

@@ -27,6 +27,14 @@
         app:iconSpaceReserved="false" />
 
     <EditTextPreference
+        android:key="byedpi_proxytest_parallel"
+        android:title="@string/test_parallel_strategies"
+        android:inputType="number"
+        android:defaultValue="3"
+        app:useSimpleSummaryProvider="true"
+        app:iconSpaceReserved="false" />
+
+    <EditTextPreference
         android:key="byedpi_proxytest_timeout"
         android:title="@string/test_timeout"
         android:inputType="number"

@@ -247,4 +247,6 @@
     <string name="external_strategy_settings">Diğer uygulamalardan strateji değişikliği</string>
     <string name="external_strategy_summary">Diğer uygulamaların komut satırını değiştirmesine izin ver. Proxy yalnızca yerel adreste kalır</string>
     <string name="external_strategy_rejected">Başka bir uygulama stratejiyi değiştirmeye çalıştı. İstek reddedildi, otomasyon ayarlarına bakın</string>
+    <string name="test_parallel_strategies">Aynı anda strateji sayısı</string>
+    <string name="proxytest_parallel_desc">Her strateji ayrı bir süreçte çalışır, ağ yükü buna göre artar. Kendi portu (-p) olan stratejiler sırayla test edilir</string>
 </resources>

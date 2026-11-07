@@ -99,6 +99,26 @@
         </service>
 
         <service
+            android:name=".services.ProxyTestSlot0"
+            android:process=":test0"
+            android:exported="false" />
+
+        <service
+            android:name=".services.ProxyTestSlot1"
+            android:process=":test1"
+            android:exported="false" />
+
+        <service
+            android:name=".services.ProxyTestSlot2"
+            android:process=":test2"
+            android:exported="false" />
+
+        <service
+            android:name=".services.ProxyTestSlot3"
+            android:process=":test3"
+            android:exported="false" />
+
+        <service
             android:name=".services.TestService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />

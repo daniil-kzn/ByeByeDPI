@@ -39,6 +39,7 @@ internal class NativeEngine(
     private val mode: Mode = Mode.Proxy,
     initialPid: Int = 0,
     private val foreground: Boolean = true,
+    private val testSlot: Int = -1,
 ) {
     companion object {
         private const val TAG = "NativeEngine"
@@ -82,6 +83,10 @@ internal class NativeEngine(
     }
 
     private val application = context.applicationContext as Application
+    private val targetService: Class<out Service> =
+        if (testSlot >= 0) TestSlots.serviceClass(testSlot) else serviceClass(mode)
+    private val targetProcess: String =
+        application.packageName + if (testSlot >= 0) TestSlots.processSuffix(testSlot) else ":native"
     private val hello = CompletableDeferred<Unit>()
     private val configured = CompletableDeferred<Unit>()
     private val started = CompletableDeferred<Unit>()
@@ -106,6 +111,7 @@ internal class NativeEngine(
 
     init {
         require(foreground || mode == Mode.Proxy)
+        require(testSlot < 0 || !foreground && testSlot < TestSlots.COUNT)
     }
 
     private val deathRecipient = IBinder.DeathRecipient {
@@ -182,11 +188,11 @@ internal class NativeEngine(
             connecting = true
             if (launchService && foreground) {
                 ContextCompat.startForegroundService(application,
-                    Intent(application, serviceClass(mode)).setAction(START_ACTION))
+                    Intent(application, targetService).setAction(START_ACTION))
                 serviceStarted = true
             }
             bound = application.bindService(
-                Intent(application, serviceClass(mode)).setAction(
+                Intent(application, targetService).setAction(
                     if (foreground) EngineProtocol.CONTROL_ACTION else EngineProtocol.BOUND_CONTROL_ACTION),
                 connection,
                 if (foreground) 0 else Context.BIND_AUTO_CREATE,
@@ -251,7 +257,7 @@ internal class NativeEngine(
             }
         }
         withTimeout(5_000) { awaitStopped() }
-        if (foreground && serviceStarted) application.stopService(Intent(application, serviceClass(mode)))
+        if (foreground && serviceStarted) application.stopService(Intent(application, targetService))
         unbind()
     }
 
@@ -290,7 +296,7 @@ internal class NativeEngine(
             val sameProcess = if (processStartTime != null && startTime != null) {
                 processStartTime == startTime
             } else manager.runningAppProcesses.orEmpty().any {
-                it.pid == pid && it.uid == Process.myUid() && it.processName == "${application.packageName}:native"
+                it.pid == pid && it.uid == Process.myUid() && it.processName == targetProcess
             }
             if (sameProcess) Process.killProcess(pid)
         }
@@ -301,9 +307,9 @@ internal class NativeEngine(
         if (pid > 0 || processStopped) return
         val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         pid = manager.getRunningServices(Int.MAX_VALUE).firstOrNull {
-            it.uid == Process.myUid() && it.pid > 0 && it.service.className == serviceClass(mode).name
+            it.uid == Process.myUid() && it.pid > 0 && it.service.className == targetService.name
         }?.pid ?: manager.runningAppProcesses.orEmpty().firstOrNull {
-            it.uid == Process.myUid() && it.processName == "${application.packageName}:native"
+            it.uid == Process.myUid() && it.processName == targetProcess
         }?.pid ?: 0
         if (pid > 0) processStartTime = readProcessStartTime()
     }
@@ -311,10 +317,10 @@ internal class NativeEngine(
     @Suppress("DEPRECATION")
     private fun cancelUnconnectedStart() {
         unbind()
-        if (foreground) application.stopService(Intent(application, serviceClass(mode)))
+        if (foreground) application.stopService(Intent(application, targetService))
         val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val process = manager.runningAppProcesses.orEmpty().firstOrNull {
-            it.uid == Process.myUid() && it.processName == "${application.packageName}:native"
+            it.uid == Process.myUid() && it.processName == targetProcess
         }
         if (process != null && process.pid > 0) {
             pid = process.pid
@@ -322,7 +328,7 @@ internal class NativeEngine(
             return
         }
         val pending = manager.getRunningServices(Int.MAX_VALUE).any {
-            it.uid == Process.myUid() && it.service.className == serviceClass(mode).name
+            it.uid == Process.myUid() && it.service.className == targetService.name
         }
         if (!pending && process == null) {
             serviceStarted = false

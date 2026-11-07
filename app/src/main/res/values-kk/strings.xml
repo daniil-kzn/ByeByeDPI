@@ -247,4 +247,6 @@
     <string name="external_strategy_settings">Басқа қолданбалардан стратегияны өзгерту</string>
     <string name="external_strategy_summary">Басқа қолданбаларға пәрмен жолын ауыстыруға рұқсат беру. Прокси тек жергілікті мекенжайда қалады</string>
     <string name="external_strategy_rejected">Басқа қолданба стратегияны өзгертуге тырысты. Сұрау қабылданбады, автоматтандыру баптауларын қараңыз</string>
+    <string name="test_parallel_strategies">Бір уақыттағы стратегиялар саны</string>
+    <string name="proxytest_parallel_desc">Әр стратегия жеке процесте іске қосылады, желі жүктемесі соған сай өседі. Өз порты (-p) бар стратегиялар бір-бірлеп тексеріледі</string>
 </resources>
