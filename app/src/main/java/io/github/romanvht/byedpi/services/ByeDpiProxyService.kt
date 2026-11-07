@@ -81,7 +81,8 @@ open class ByeDpiProxyService : Service() {
             Mode.Proxy,
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(FOREGROUND_SERVICE_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            // specialUse has no daily limit, unlike dataSync (6 h/day from targetSdk 35).
+            startForeground(FOREGROUND_SERVICE_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
             startForeground(FOREGROUND_SERVICE_ID, notification)
         }

@@ -94,8 +94,11 @@
 
         <service android:name=".services.ByeDpiProxyService"
             android:process=":native"
-            android:foregroundServiceType="dataSync"
+            android:foregroundServiceType="specialUse"
             android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local SOCKS5 proxy that other apps connect to; it must run for as long as the user keeps it enabled" />
         </service>
 
         <service
