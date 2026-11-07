@@ -1,6 +1,8 @@
 package io.github.romanvht.byedpi.data
 
 import android.content.SharedPreferences
+import io.github.romanvht.byedpi.utility.DEFAULT_OOB_CHAR
+import io.github.romanvht.byedpi.utility.isValidOobChar
 
 data class UISettings(
     val ip: String = "127.0.0.1",
@@ -85,7 +87,7 @@ data class UISettings(
                 splitAtHost = preferences.getBoolean("byedpi_split_at_host", false),
                 fakeTtl = preferences.getString("byedpi_fake_ttl", null)?.toIntOrNull() ?: 8,
                 fakeSni = preferences.getString("byedpi_fake_sni", null) ?: "www.iana.org",
-                oobChar = preferences.getString("byedpi_oob_data", null) ?: "a",
+                oobChar = preferences.getString("byedpi_oob_data", null)?.takeIf { isValidOobChar(it) } ?: DEFAULT_OOB_CHAR,
                 hostMixedCase = preferences.getBoolean("byedpi_host_mixed_case", false),
                 domainMixedCase = preferences.getBoolean("byedpi_domain_mixed_case", false),
                 hostRemoveSpaces = preferences.getBoolean("byedpi_host_remove_spaces", false),

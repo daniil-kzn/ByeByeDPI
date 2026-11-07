@@ -46,6 +46,7 @@ class ByeDpiUISettingsFragment : PreferenceFragmentCompat() {
             .setOnBindEditTextListener {
                 it.filters = arrayOf(android.text.InputFilter.LengthFilter(1))
             }
+        setEditTextPreferenceListener("byedpi_oob_data") { isValidOobChar(it) }
 
         updatePreferences()
     }

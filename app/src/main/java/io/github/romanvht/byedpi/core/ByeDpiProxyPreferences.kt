@@ -9,6 +9,7 @@ import io.github.romanvht.byedpi.utility.checkIpAndPortInArgs
 import io.github.romanvht.byedpi.utility.getCmdArgs
 import io.github.romanvht.byedpi.utility.getCmdEnable
 import io.github.romanvht.byedpi.utility.getStringNotNull
+import io.github.romanvht.byedpi.utility.oobCharArg
 import io.github.romanvht.byedpi.utility.shellSplit
 
 sealed interface ByeDpiProxyPreferences {
@@ -131,7 +132,7 @@ class ByeDpiProxyUIPreferences(val settings: UISettings = UISettings()) : ByeDpi
             }
 
             if (settings.desyncMethod == UISettings.DesyncMethod.OOB || settings.desyncMethod == UISettings.DesyncMethod.DISOOB) {
-                args.add("-e${settings.oobChar[0].code.toByte()}")
+                args.add("-e${oobCharArg(settings.oobChar)}")
             }
 
             val modHttpFlags = buildList {

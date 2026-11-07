@@ -43,3 +43,18 @@ fun shellSplit(string: CharSequence): List<String> {
 
     return tokens
 }
+
+const val DEFAULT_OOB_CHAR = "a"
+
+/** OOB data is a single ASCII character: byedpi sends exactly one byte. */
+fun isValidOobChar(value: String): Boolean = value.length == 1 && value[0].code in 0..0x7F
+
+/**
+ * Formats the OOB character for `-e`. byedpi parses the value in C escape form
+ * (`parse_cform`), so a hex escape passes any byte, including quotes and spaces,
+ * without shell quoting.
+ */
+fun oobCharArg(value: String): String {
+    val char = value.takeIf { isValidOobChar(it) } ?: DEFAULT_OOB_CHAR
+    return "\\x%02x".format(char[0].code)
+}
