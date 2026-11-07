@@ -242,4 +242,9 @@
     <string name="file_picker_unavailable">На устройстве отсутствует системный выбор файлов. Для продолжения предоставьте приложению доступ к файлам.</string>
     <string name="grant_access">Предоставить доступ</string>
     <string name="storage_access_not_granted">Доступ к файлам не предоставлен</string>
+    <string name="external_control_settings">Управление из других приложений</string>
+    <string name="external_control_summary">Запуск и остановка сервиса через Tasker, ADB и другие приложения</string>
+    <string name="external_strategy_settings">Смена стратегии из других приложений</string>
+    <string name="external_strategy_summary">Разрешить другим приложениям заменять командную строку. Прокси при этом остаётся только на локальном адресе</string>
+    <string name="external_strategy_rejected">Запрос другого приложения на смену стратегии отклонён. Разрешение включается в разделе «Автоматизация»</string>
 </resources>

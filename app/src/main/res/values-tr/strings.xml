@@ -242,4 +242,9 @@
     <string name="file_picker_unavailable">Cihazda sistem dosya seçicisi yok. Devam etmek için uygulamaya dosya erişimi verin.</string>
     <string name="grant_access">Erişim ver</string>
     <string name="storage_access_not_granted">Dosya erişimi verilmedi</string>
+    <string name="external_control_settings">Diğer uygulamalardan kontrol</string>
+    <string name="external_control_summary">Servisi Tasker, ADB ve diğer uygulamalardan başlatma ve durdurma</string>
+    <string name="external_strategy_settings">Diğer uygulamalardan strateji değişikliği</string>
+    <string name="external_strategy_summary">Diğer uygulamaların komut satırını değiştirmesine izin ver. Proxy yalnızca yerel adreste kalır</string>
+    <string name="external_strategy_rejected">Başka bir uygulama stratejiyi değiştirmeye çalıştı. İstek reddedildi, otomasyon ayarlarına bakın</string>
 </resources>

@@ -242,4 +242,9 @@
     <string name="file_picker_unavailable">The device has no system file picker. Grant the app file access to continue.</string>
     <string name="grant_access">Grant access</string>
     <string name="storage_access_not_granted">File access was not granted</string>
+    <string name="external_control_settings">Control from other apps</string>
+    <string name="external_control_summary">Start and stop the service from Tasker, ADB and other apps</string>
+    <string name="external_strategy_settings">Strategy change from other apps</string>
+    <string name="external_strategy_summary">Allow other apps to replace the command line. The proxy stays on a loopback address</string>
+    <string name="external_strategy_rejected">A strategy change requested by another app was rejected. Enable it in the Automation section</string>
 </resources>

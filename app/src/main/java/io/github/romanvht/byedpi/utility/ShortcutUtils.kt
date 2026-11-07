@@ -15,10 +15,12 @@ object ShortcutUtils {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
             val shortcutManager = context.getSystemService(ShortcutManager::class.java)
             val shortcuts = mutableListOf<ShortcutInfo>()
+            val token = ExternalControl.token(context)
 
             val toggleIntent = Intent(context, ToggleActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                putExtra(ExternalControl.EXTRA_TOKEN, token)
             }
 
             val toggleShortcut = ShortcutInfo.Builder(context, "toggle_service")
@@ -38,7 +40,8 @@ object ShortcutUtils {
                     val strategyIntent = Intent(context, ToggleActivity::class.java).apply {
                         action = Intent.ACTION_VIEW
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        putExtra("strategy", strategy.text)
+                        putExtra(ToggleActivity.EXTRA_STRATEGY, strategy.text)
+                        putExtra(ExternalControl.EXTRA_TOKEN, token)
                     }
 
                     val fullLabel = strategy.name?.takeIf { it.isNotBlank() } ?: strategy.text

@@ -6,7 +6,9 @@ import android.content.SharedPreferences
 import android.net.VpnService
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.core.content.edit
+import io.github.romanvht.byedpi.R
 import io.github.romanvht.byedpi.data.AppStatus
 import io.github.romanvht.byedpi.data.Mode
 import io.github.romanvht.byedpi.data.RESTART_ACTION
@@ -15,14 +17,17 @@ import io.github.romanvht.byedpi.data.STOP_ACTION
 import io.github.romanvht.byedpi.receiver.ServiceActionReceiver
 import io.github.romanvht.byedpi.services.ServiceManager
 import io.github.romanvht.byedpi.services.appStatus
+import io.github.romanvht.byedpi.utility.ExternalControl
 import io.github.romanvht.byedpi.utility.getCmdArgs
 import io.github.romanvht.byedpi.utility.getPreferences
 import io.github.romanvht.byedpi.utility.mode
+import io.github.romanvht.byedpi.utility.strategyListensOnLoopback
 
 class ToggleActivity : Activity() {
 
     companion object {
         private const val TAG = "ToggleServiceActivity"
+        const val EXTRA_STRATEGY = "strategy"
     }
 
     private lateinit var prefs: SharedPreferences
@@ -32,7 +37,19 @@ class ToggleActivity : Activity() {
         ServiceManager.refresh(this)
 
         prefs = getPreferences()
-        val strategy = intent.getStringExtra("strategy")
+        val trusted = ExternalControl.isTrusted(this, intent.getStringExtra(ExternalControl.EXTRA_TOKEN))
+        if (!trusted && !prefs.getBoolean(ExternalControl.PREF_ALLOW_CONTROL, true)) {
+            Log.w(TAG, "External control is disabled, request ignored")
+            finish()
+            return
+        }
+
+        val strategy = intent.getStringExtra(EXTRA_STRATEGY)
+        if (strategy != null && !trusted && !isExternalStrategyAllowed(strategy)) {
+            Toast.makeText(this, R.string.external_strategy_rejected, Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         val updated = updateStrategy(strategy)
 
         val onlyUpdate = intent.getBooleanExtra("only_update", false)
@@ -113,6 +130,18 @@ class ToggleActivity : Activity() {
                 }
             }
         }
+    }
+
+    private fun isExternalStrategyAllowed(strategy: String): Boolean {
+        if (!prefs.getBoolean(ExternalControl.PREF_ALLOW_STRATEGY, false)) {
+            Log.w(TAG, "Strategy change from another app is disabled")
+            return false
+        }
+        if (!strategyListensOnLoopback(strategy)) {
+            Log.w(TAG, "Strategy from another app binds the proxy to a non-loopback address")
+            return false
+        }
+        return true
     }
 
     private fun updateStrategy(strategy: String?): Boolean {

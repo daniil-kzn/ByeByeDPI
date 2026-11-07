@@ -242,4 +242,9 @@
     <string name="file_picker_unavailable">Құрылғыда жүйелік файл таңдау құралы жоқ. Жалғастыру үшін қолданбаға файлдарға рұқсат беріңіз.</string>
     <string name="grant_access">Рұқсат беру</string>
     <string name="storage_access_not_granted">Файлдарға рұқсат берілмеді</string>
+    <string name="external_control_settings">Басқа қолданбалардан басқару</string>
+    <string name="external_control_summary">Қызметті Tasker, ADB және басқа қолданбалар арқылы іске қосу және тоқтату</string>
+    <string name="external_strategy_settings">Басқа қолданбалардан стратегияны өзгерту</string>
+    <string name="external_strategy_summary">Басқа қолданбаларға пәрмен жолын ауыстыруға рұқсат беру. Прокси тек жергілікті мекенжайда қалады</string>
+    <string name="external_strategy_rejected">Басқа қолданба стратегияны өзгертуге тырысты. Сұрау қабылданбады, автоматтандыру баптауларын қараңыз</string>
 </resources>

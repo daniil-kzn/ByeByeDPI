@@ -243,4 +243,9 @@
     <string name="file_picker_unavailable">Thiết bị không có trình chọn tệp hệ thống. Hãy cấp quyền truy cập tệp cho ứng dụng để tiếp tục.</string>
     <string name="grant_access">Cấp quyền</string>
     <string name="storage_access_not_granted">Chưa cấp quyền truy cập tệp</string>
+    <string name="external_control_settings">Điều khiển từ ứng dụng khác</string>
+    <string name="external_control_summary">Bật và tắt dịch vụ từ Tasker, ADB và các ứng dụng khác</string>
+    <string name="external_strategy_settings">Đổi chiến lược từ ứng dụng khác</string>
+    <string name="external_strategy_summary">Cho phép ứng dụng khác thay dòng lệnh. Proxy chỉ lắng nghe trên địa chỉ cục bộ</string>
+    <string name="external_strategy_rejected">Một ứng dụng khác đã cố đổi chiến lược. Yêu cầu bị từ chối, xem cài đặt tự động hóa</string>
 </resources>
