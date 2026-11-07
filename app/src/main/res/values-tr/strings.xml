@@ -136,7 +136,7 @@
     </string>
     <string name="test_process">Kontrol ediliyor %1$d/%2$d</string>
     <string name="test_proxy_error">Proxy hatası. Test durduruldu.</string>
-    <string name="test_good_cmds">%50 başarıya ulaşan komutlar</string>
+    <string name="test_good_cmds" formatted="false">%50 başarıya ulaşan komutlar</string>
     <string name="test_complete">Test tamamlandı</string>
     <string name="test_complete_info">Kullanmak veya kopyalamk için bir komuta basılı tut</string>
     <string name="test_cmd_connect">Uygula ve çalıştır</string>
